@@ -35,18 +35,20 @@ df
 profile = ProfileReport(df, title="Pandas Profiling Report")
 
 
-profile
+# +
+# profile
+# -
 
 # ## Data Cleaning
 #
 
+# ### Clean Dates
+
 df = df.rename(columns={"C-KALWOCHE-0": "cal_week", "C-B00-0": "state", "C-C11-0": "gender", "F-ANZ-1": "counts" })
 
 # +
-# df['year'] = [d.split("-")[1][:4] for d in df['cal_week']]
-# df['cal_week'] = [d.split("-")[1][4:] for d in df['cal_week']]
-
-
+df['year'] = [d.split("-")[1][:4] for d in df['cal_week']]
+df['cal_week'] = [d.split("-")[1][4:] for d in df['cal_week']]
 df['formatted_date'] = df.year.astype(str)  + df.cal_week.astype(str) + '0'
 df['date'] = pd.to_datetime(df['formatted_date'], format='%Y%W%w')
 
@@ -60,22 +62,21 @@ df['conv_date']= df.date.map(datetime.datetime.toordinal)
 
 df
 
-
+# ### Aggregate dates
 
 df.groupby('date').agg('sum')
-
-# ## Data visualization
-#
 
 grpd_date = df.groupby('date').agg('sum') 
 grpd_date = grpd_date.rename(columns={'counts':'nr_deaths'}) 
 grpd_date
 
+# ### Remove outliers
+
 grpd_date.describe()
 
 # +
-upper_limit = grpd_date['nr_deaths'].quantile(0.99)
-lower_limit = grpd_date['nr_deaths'].quantile(0.01)
+upper_limit = grpd_date['nr_deaths'].quantile(0.99999)
+lower_limit = grpd_date['nr_deaths'].quantile(0.00001)
 
 new_df = grpd_date[(
     grpd_date['nr_deaths'] <= upper_limit) & (
@@ -86,6 +87,9 @@ new_df
 
 grpd_date = new_df
 
+# ## Data visualization
+#
+
 fig = px.line(
     x=grpd_date.index,
     y=grpd_date.nr_deaths, 
@@ -93,12 +97,7 @@ fig = px.line(
 )
 fig.show()
 
-# +
-
-len(x), len(y)
-# -
-
-grpd_date.index[0]
+# ### Simple regression
 
 # +
 
@@ -113,6 +112,9 @@ fig = px.scatter(
 fig.show()
 
 # regression params not available for lowess
+# -
+
+# ### Polynomial Regression
 
 # +
 
@@ -148,11 +150,6 @@ model = LinearRegression()
 model.fit(x, y)
 
 
-
-
-# x = grpd_date.index
-# x = np.arange(0, len(y))
-
 x_range_ordinal = np.linspace(x.min(), x.max(), len(y))
 
 
@@ -160,23 +157,6 @@ y_range = model.predict(x_range_ordinal.reshape(-1, 1))
 
 
 len(x_range_ordinal), len(y_range)
-                    
-# reg.score(X, y)
-# reg.coef_
-# reg.intercept_                         
-                          
-# # Using a pipeline to automate the input transformation
-# from sklearn.pipeline import Pipeline
-
-# poly = PolynomialFeatures(degree)
-# model = LinearRegression()
-# pipeline = Pipeline(steps=[('t', poly), ('m', model)])
-
-# linreg = pipeline.fit(X_train, y_train)
-# y_predict2 = linreg.predict(X_predict)
-
-# assert(np.array_equal(y_predict, y_predict2))
-
 
 # +
 
@@ -189,9 +169,6 @@ fig = px.scatter(
 )
 
 
-# x_range = pd.date_range(start=grpd_date.index[0],
-#                   end=grpd_date.index[-1],
-#                   periods=len(grpd_date.index.values))
 fig.add_traces(
     go.Scatter(
         x=grpd_date.index, y=y_range, 
@@ -245,12 +222,6 @@ y_range_poly = poly_reg_model.predict(
 
 print(y_range_poly.shape, poly_pred_x.shape)
 
-# dx = np.diff(np.arange(0, len(y))),
-# dy = np.diff(y_range_poly)
-# slopes = dy/dx
-# slopes = slopes[0]
-
-# print('slps', len(slopes), slopes[100:200])
 
 
 print(poly_reg_model.intercept_)
@@ -267,19 +238,9 @@ derivs: {deriv},
 y vals at point: {y_value_at_point, len(y_value_at_point)},
 
 slope at point: {slope_at_point}''')
-# -
 
-slope_at_point[:50]
-
-grpd_date.index
 
 # +
-# print(poly_reg_model.intercept_)
-# print(poly_reg_model.coef_)
-
-interc = poly_reg_model.intercept_
-coeffs = poly_reg_model.coef_
-
 def slope_line(fig, ind, x, y):
     """Plot a line from slope and intercept"""
     
@@ -308,8 +269,6 @@ def slope_line(fig, ind, x, y):
             )
         )
 # -
-
-grpd_date.index
 
 y_value_at_point.flatten()#.shape, y_range_poly.shape
 
@@ -341,7 +300,7 @@ fig.add_traces(
 
 
 
-for pt in [1000]:
+for pt in [1000, 10]:
     slope_line(
         fig, 
         x= np.arange(0, len(y)), 
