@@ -167,7 +167,7 @@ new_df
 
 final_df = new_df
 
-# ## Data visualization
+# ## Data visualization - All deaths
 #
 
 # +
@@ -183,9 +183,75 @@ fig.add_traces(
         name='Covid deaths'))
 
 fig.show()
+
+# +
+trace1 = go.Scatter(
+                    x=final_df.index,
+                    y=final_df.nr_deaths,
+                    mode='lines',
+                    line=dict(width=1.5))
+
+
+frames=[
+    dict(
+        data=[
+            dict(
+                type = 'scatter',
+                x=final_df.index[:k],
+                y=final_df.nr_deaths[:k])]
+    )
+    for k in range(0, len(final_df))]
+
+layout = go.Layout(width=1000,
+                   height=600,
+                   showlegend=False,
+                   hovermode='x unified',
+                   updatemenus=[
+                        dict(
+                            type='buttons', showactive=False,
+                            y=1.05,
+                            x=1.15,
+                            xanchor='right',
+                            yanchor='top',
+                            pad=dict(t=0, r=10),
+                            buttons=[dict(label='Build line',
+                            method='animate',
+                            args=[None, 
+                                  dict(frame=dict(duration=2, 
+                                                  redraw=False),
+                                                  transition=dict(duration=0),
+                                                  fromcurrent=True,
+                                                  mode='immediate')]
+                            )]
+                        ),
+                        dict(
+                            type = "buttons",
+                            direction = "left",
+                            buttons=list([
+                                dict(
+                                    args=[{"yaxis.type": "linear"}],
+                                    label="LINEAR",
+                                    method="relayout"
+                                ),
+                                dict(
+                                    args=[{"yaxis.type": "log"}],
+                                    label="LOG",
+                                    method="relayout"
+                                )
+                            ]),
+                        ),
+                    ]              
+                  )
+# layout.update(xaxis =dict(range=['2020-03-16', '2020-06-13'], autorange=False),
+#               yaxis =dict(range=[0, 35000], autorange=False));
+fig = go.Figure(data=[trace1], frames=frames, layout=layout)
+# a
+fig.show()
 # -
 
 # ### Simple regression
+#
+# Ordinar Least Squares
 
 # +
 
@@ -232,7 +298,7 @@ x=final_df.index.values
 y=final_df.nr_deaths.values
 x = np.arange(0, len(y))
 
-# x = grpd_date.conv_date.values
+# x = final_df.conv_date.values
 x = x.reshape(-1, 1)
 model = LinearRegression()
 model.fit(x, y)
@@ -249,8 +315,8 @@ len(x_range_ordinal), len(y_range)
 # +
 
 fig = px.scatter(
-    x=grpd_date.index,
-    y=grpd_date.nr_deaths, 
+    x=final_df.index,
+    y=final_df.nr_deaths, 
     opacity=.5,
 #     trendline='ols', trendline_color_override='darkblue',
     title='Deaths per year'
@@ -259,7 +325,7 @@ fig = px.scatter(
 
 fig.add_traces(
     go.Scatter(
-        x=grpd_date.index, y=y_range, 
+        x=final_df.index, y=y_range, 
         name='Regression Fit'))
 
 
@@ -272,7 +338,7 @@ from sklearn.preprocessing import PolynomialFeatures
 poly_degree = 3
 
 
-y = grpd_date.nr_deaths.values
+y = final_df.nr_deaths.values
 
 x = np.arange(0, len(y))
 x = x.reshape(-1, 1)
@@ -365,16 +431,16 @@ np.arange(0, len(y))
 # +
 fig = px.scatter(
     x=np.arange(0, len(y)),
-    y=grpd_date.nr_deaths, 
+    y=final_df.nr_deaths, 
     opacity=.5,
 #     trendline='ols', trendline_color_override='darkblue',
     title='Deaths per year'
 )
 
 
-# x_range = pd.date_range(start=grpd_date.index[0],
-#                   end=grpd_date.index[-1],
-#                   periods=len(grpd_date.index.values))
+# x_range = pd.date_range(start=final_df.index[0],
+#                   end=final_df.index[-1],
+#                   periods=len(final_df.index.values))
 fig.add_traces(
     go.Scatter(
         x=np.arange(0, len(y)), y=y_range_poly, 
@@ -399,73 +465,6 @@ for pt in [1000, 10]:
 
 fig.show()
 
-# -
-
-len(grpd_date.index), len(grpd_date.nr_deaths)
-
-# +
-trace1 = go.Scatter(
-                    x=grpd_date.index,
-                    y=grpd_date.nr_deaths,
-                    mode='lines',
-                    line=dict(width=1.5))
-
-
-frames=[
-    dict(
-        data=[
-            dict(
-                type = 'scatter',
-                x=grpd_date.index[:k],
-                y=grpd_date.nr_deaths[:k])]
-    )
-    for k in range(0, len(grpd_date))]
-
-layout = go.Layout(width=1000,
-                   height=600,
-                   showlegend=False,
-                   hovermode='x unified',
-                   updatemenus=[
-                        dict(
-                            type='buttons', showactive=False,
-                            y=1.05,
-                            x=1.15,
-                            xanchor='right',
-                            yanchor='top',
-                            pad=dict(t=0, r=10),
-                            buttons=[dict(label='Build line',
-                            method='animate',
-                            args=[None, 
-                                  dict(frame=dict(duration=2, 
-                                                  redraw=False),
-                                                  transition=dict(duration=0),
-                                                  fromcurrent=True,
-                                                  mode='immediate')]
-                            )]
-                        ),
-                        dict(
-                            type = "buttons",
-                            direction = "left",
-                            buttons=list([
-                                dict(
-                                    args=[{"yaxis.type": "linear"}],
-                                    label="LINEAR",
-                                    method="relayout"
-                                ),
-                                dict(
-                                    args=[{"yaxis.type": "log"}],
-                                    label="LOG",
-                                    method="relayout"
-                                )
-                            ]),
-                        ),
-                    ]              
-                  )
-# layout.update(xaxis =dict(range=['2020-03-16', '2020-06-13'], autorange=False),
-#               yaxis =dict(range=[0, 35000], autorange=False));
-fig = go.Figure(data=[trace1], frames=frames, layout=layout)
-# a
-fig.show()
 # -
 
 
