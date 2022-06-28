@@ -122,6 +122,12 @@ grpd_date_df_deaths = df_deaths.groupby('date').agg('sum')
 
 grpd_date_df_deaths['deaths_per_day'] = grpd_date_df_deaths.diff()
 
+# +
+# https://www.thelancet.com/journals/lancet/article/PIIS0140-6736(21)02796-3/fulltext#seccestitle150
+# austria has ratio of 1.33
+# grpd_date_df_deaths['deaths_per_day_corrected'] = grpd_date_df_deaths.deaths_per_day * 1.33 
+# -
+
 grpd_date_df_deaths
 
 fig = px.line(
@@ -130,11 +136,6 @@ fig = px.line(
     title='Deaths per year'
 )
 fig.show()
-
-# +
-# grpd_date_df_deaths['date'] = grpd_date_df_deaths.index
-# grpd_date_df_deaths
-# -
 
 # ### Merge datasets
 
@@ -167,6 +168,11 @@ new_df
 
 final_df = new_df
 
+only_covid = final_df[final_df.covid_deaths.notna()]
+only_covid.shape
+
+final_df = only_covid
+
 # ## Data visualization - All deaths
 #
 
@@ -184,12 +190,16 @@ fig.add_traces(
 
 fig.show()
 
-# +
+# + code_folding=[]
 trace1 = go.Scatter(
                     x=final_df.index,
                     y=final_df.nr_deaths,
                     mode='lines',
                     line=dict(width=1.5))
+
+trace2 = go.Scatter(
+        x=final_df.index, y=final_df.covid_deaths, 
+        name='Covid deaths')
 
 
 frames=[
@@ -198,7 +208,12 @@ frames=[
             dict(
                 type = 'scatter',
                 x=final_df.index[:k],
-                y=final_df.nr_deaths[:k])]
+                y=final_df.nr_deaths[:k]),
+    
+            dict(
+                type = 'scatter',
+                x=final_df.index[:k],
+                y=final_df.covid_deaths[:k])]
     )
     for k in range(0, len(final_df))]
 
@@ -244,7 +259,7 @@ layout = go.Layout(width=1000,
                   )
 # layout.update(xaxis =dict(range=['2020-03-16', '2020-06-13'], autorange=False),
 #               yaxis =dict(range=[0, 35000], autorange=False));
-fig = go.Figure(data=[trace1], frames=frames, layout=layout)
+fig = go.Figure(data=[trace1, trace2], frames=frames, layout=layout)
 # a
 fig.show()
 # -
@@ -395,6 +410,7 @@ slope at point: {slope_at_point}''')
 def slope_line(fig, ind, x, y):
     """Plot a line from slope and intercept"""
     
+    print((x[0] - x[ind]))
     ylow = (x[0] - x[ind]) * slope_at_point[ind] + y[ind]
     yhigh = (x[-1] - x[ind]) * slope_at_point[ind] + y[ind]
     
@@ -413,11 +429,16 @@ def slope_line(fig, ind, x, y):
         )
 
 
-np.arange(0, len(y))
+len(final_df.index)
 
-# +
+len(final_df.nr_deaths.values)
+
+final_df.index.strftime('%Y-%m-%d')
+
+# + code_folding=[]
 fig = px.scatter(
     x=np.arange(0, len(y)),
+    #x=final_df.index,
     y=final_df.nr_deaths, 
     opacity=.5,
     title='Deaths per year'
@@ -426,32 +447,58 @@ fig = px.scatter(
 
 fig.add_traces(
     go.Scatter(
-        x=np.arange(0, len(y)), y=y_value_at_point, 
+        x=np.arange(0, len(y)),
+        #x=final_df.index.strftime('%Y-%m-%d').to_list(),
+        y=y_value_at_point, 
         name='Polynomial regression Fit 2'))
 
 
 
+fig.update_xaxes(
+#     rangeslider_visible=True,
+#     ticktext=final_df.index.strftime('%Y-%m-%d')[::10],
+#     tickvals=np.arange(0, len(y))[::10],
+#     dtick = 1000,
+#     tickformatstops = [
+#         dict(dtickrange=[None, 1000], value="%H:%M:%S.%L ms"),
+#         dict(dtickrange=[1000, 60000], value="%H:%M:%S s"),
+#         dict(dtickrange=[60000, 3600000], value="%H:%M m"),
+#         dict(dtickrange=[3600000, 86400000], value="%H:%M h"),
+#         dict(dtickrange=[86400000, 604800000], value="%e. %b d"),
+#         dict(dtickrange=[604800000, "M1"], value="%e. %b w"),
+#         dict(dtickrange=["M1", "M12"], value="%b '%y M"),
+#         dict(dtickrange=["M12", None], value="%Y Y")
+#     ]
+    #tickformatstops not working with ticktextZ
+)
 
-for pt in [1080]:
+
+
+
+# for pt in [1120]:
+for pt in [31]:
     slope_line(
         fig, 
-        x= np.arange(0, len(y)), 
+        x= np.arange(0, len(y)),
+        #x=final_df.index,
         y = y_value_at_point, 
         ind = pt)
     
     fig.add_annotation(x=pt, y=y_value_at_point[pt],
-            text=f'Slope: {slope_at_point[pt]:.2f}',
+            text=f'''Slope: {slope_at_point[pt]:.2f}\t {final_df.index.strftime('%Y-%m-%d')[pt]}''',
             showarrow=True,
             arrowhead=1)
 
 
+fig.update_layout(
+    hovermode='x unified',
+)
+    
 fig.show()
 
 # -
 
 # ## Data visualization - Corona deaths
-
-only_covid = final_df[final_df.covid_deaths.notna()]
 
 fig = px.scatter(
     x=only_covid.index,
@@ -477,5 +524,106 @@ fig.show()
 
 # regression params not available for lowess
 # -
+
+# ### Polynomial
+#
+
+# +
+poly_degree = 10
+
+
+y = only_covid.covid_deaths.values
+
+x = np.arange(0, len(y))
+x = x.reshape(-1, 1)
+
+# just for checking with sklearn implementation
+poly = PolynomialFeatures(degree=poly_degree, include_bias=False)
+poly_features = poly.fit_transform(x)
+poly_reg_model = LinearRegression()
+poly_reg_model.fit(poly_features, y)
+
+
+# y_range_poly = poly_reg_model.predict(
+#     poly_pred_x)
+# print(poly_reg_model.intercept_)
+# print(poly_reg_model.coef_)
+###
+
+#-----
+fittedParameters = np.polyfit(np.arange(0, len(y)), y, poly_degree )
+
+poly_new = np.poly1d(fittedParameters)
+
+deriv = np.polyder(poly_new)
+
+y_value_at_point = poly_new(x).flatten()
+
+slope_at_point = np.polyval(deriv, np.arange(0, len(y)))
+#-----
+
+
+
+# x_range_ordinal_poly = np.linspace(x.min(), x.max(), len(y))
+
+# poly_pred_x = poly.fit_transform(x_range_ordinal_poly.reshape(-1, 1))
+
+
+print(f'''
+x: {len(x), x},
+y: {len(y), y},
+''')
+
+print(f'''
+fittedparams: {fittedParameters, fittedParameters},
+
+derivs: {deriv},
+
+y vals at point: {y_value_at_point, len(y_value_at_point)},
+
+slope at point: {slope_at_point}''')
+
+# +
+fig = px.scatter(
+    x=np.arange(0, len(y)),
+    y=only_covid.covid_deaths, 
+    opacity=.5,
+    title='Deaths per year'
+)
+
+
+fig.add_traces(
+    go.Scatter(
+        x=np.arange(0, len(y)),
+        #x=final_df.index.strftime('%Y-%m-%d').to_list(),
+        y=y_value_at_point, 
+        name='Polynomial regression Fit 2'))
+
+for pt in [31]:
+    slope_line(
+        fig, 
+        x= np.arange(0, len(y)),
+        #x=final_df.index,
+        y = y_value_at_point, 
+        ind = pt)
+    
+    fig.add_annotation(
+        x=pt, 
+        y=y_value_at_point[pt],
+        text=f'''Slope: {slope_at_point[pt]:.2f}\t {only_covid.index.strftime('%Y-%m-%d')[pt]}''',
+        showarrow=True,
+        arrowhead=1)
+
+
+fig.update_layout(
+    hovermode='x unified',
+)
+    
+fig.show()
+# -
+
+
+
+
 
 
