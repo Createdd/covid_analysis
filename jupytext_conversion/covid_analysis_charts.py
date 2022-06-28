@@ -335,7 +335,7 @@ fig.show()
 # +
 from sklearn.preprocessing import PolynomialFeatures
 
-poly_degree = 3
+poly_degree = 10
 
 
 y = final_df.nr_deaths.values
@@ -343,11 +343,18 @@ y = final_df.nr_deaths.values
 x = np.arange(0, len(y))
 x = x.reshape(-1, 1)
 
+# just for checking with sklearn implementation
 poly = PolynomialFeatures(degree=poly_degree, include_bias=False)
 poly_features = poly.fit_transform(x)
-
 poly_reg_model = LinearRegression()
 poly_reg_model.fit(poly_features, y)
+
+
+# y_range_poly = poly_reg_model.predict(
+#     poly_pred_x)
+# print(poly_reg_model.intercept_)
+# print(poly_reg_model.coef_)
+###
 
 #-----
 fittedParameters = np.polyfit(np.arange(0, len(y)), y, poly_degree )
@@ -356,34 +363,23 @@ poly_new = np.poly1d(fittedParameters)
 
 deriv = np.polyder(poly_new)
 
-# y_value_at_point = np.polyval(fittedParameters, y)
 y_value_at_point = poly_new(x).flatten()
-
 
 slope_at_point = np.polyval(deriv, np.arange(0, len(y)))
 #-----
 
 
 
-x_range_ordinal_poly = np.linspace(x.min(), x.max(), len(y))
+# x_range_ordinal_poly = np.linspace(x.min(), x.max(), len(y))
 
-poly_pred_x = poly.fit_transform(x_range_ordinal_poly.reshape(-1, 1))
-
-
-y_range_poly = poly_reg_model.predict(
-    poly_pred_x)
+# poly_pred_x = poly.fit_transform(x_range_ordinal_poly.reshape(-1, 1))
 
 
-print(y_range_poly.shape, poly_pred_x.shape)
-
-
-
-print(poly_reg_model.intercept_)
-print(poly_reg_model.coef_)
 print(f'''
 x: {len(x), x},
 y: {len(y), y},
 ''')
+
 print(f'''
 fittedparams: {fittedParameters, fittedParameters},
 
@@ -394,23 +390,16 @@ y vals at point: {y_value_at_point, len(y_value_at_point)},
 slope at point: {slope_at_point}''')
 
 
-# +
+# -
+
 def slope_line(fig, ind, x, y):
     """Plot a line from slope and intercept"""
-    
-    
-#     y_value_at_point = np.polyval(fittedParameters, y[ind])
-#     slope_at_point = np.polyval(deriv, y[ind])
-
     
     ylow = (x[0] - x[ind]) * slope_at_point[ind] + y[ind]
     yhigh = (x[-1] - x[ind]) * slope_at_point[ind] + y[ind]
     
     x_vals = [x[0], x[-1]]
-#     y_vals = [y[ind] , x[ind +1] * slope_at_point[ind] + intercept[ind]]
     y_vals = [ylow, yhigh]
-    
-    
 
     print(x[ind], x_vals, y_vals, y[ind],slope_at_point[ind])
     
@@ -419,12 +408,10 @@ def slope_line(fig, ind, x, y):
                 x=x_vals, 
                 y=y_vals, 
                 name="Tangent at point", 
-                line = dict(color='orange', width=2, dash='dash')
+                line = dict(color='orange', width=2, dash='dash'),
             )
         )
-# -
 
-y_value_at_point.flatten()#.shape, y_range_poly.shape
 
 np.arange(0, len(y))
 
@@ -433,18 +420,9 @@ fig = px.scatter(
     x=np.arange(0, len(y)),
     y=final_df.nr_deaths, 
     opacity=.5,
-#     trendline='ols', trendline_color_override='darkblue',
     title='Deaths per year'
 )
 
-
-# x_range = pd.date_range(start=final_df.index[0],
-#                   end=final_df.index[-1],
-#                   periods=len(final_df.index.values))
-fig.add_traces(
-    go.Scatter(
-        x=np.arange(0, len(y)), y=y_range_poly, 
-        name='Polynomial regression Fit'))
 
 fig.add_traces(
     go.Scatter(
@@ -454,19 +432,50 @@ fig.add_traces(
 
 
 
-for pt in [1000, 10]:
+for pt in [1080]:
     slope_line(
         fig, 
         x= np.arange(0, len(y)), 
         y = y_value_at_point, 
         ind = pt)
+    
+    fig.add_annotation(x=pt, y=y_value_at_point[pt],
+            text=f'Slope: {slope_at_point[pt]:.2f}',
+            showarrow=True,
+            arrowhead=1)
 
-# fig.update_layout(yaxis_range=[0,2000])
 
 fig.show()
 
 # -
 
+# ## Data visualization - Corona deaths
 
+only_covid = final_df[final_df.covid_deaths.notna()]
+
+fig = px.scatter(
+    x=only_covid.index,
+    y=only_covid.covid_deaths, 
+    trendline="ols",
+    trendline_color_override="red",
+    opacity=.5,
+    title='Deaths per year'
+)
+fig.show()
+
+# +
+fig = px.scatter(
+    x=only_covid.index,
+    y=only_covid.covid_deaths, 
+    trendline="lowess",
+    trendline_color_override="red",
+    trendline_options=dict(frac=0.1),
+    opacity=.5,
+    title='Deaths per year'
+)
+fig.show()
+
+# regression params not available for lowess
+# -
 
 
