@@ -20,23 +20,34 @@ from pandas_profiling import ProfileReport
 import plotly.express as px
 import plotly.graph_objects as go
 
+# -
+
+# ## Load data
+#
+# general deaths: https://www.data.gv.at/katalog/dataset/stat_gestorbene-in-osterreich-ohne-auslandssterbefalle-ab-2000-nach-kalenderwoche/resource/b0c11b84-69d4-4d3a-9617-5307cc4edb73
+#
+# covid deaths: https://www.data.gv.at/katalog/dataset/covid-19-zeitverlauf-der-gemeldeten-covid-19-zahlen-der-bundeslander-morgenmeldung/resource/24f56d99-e5cc-42e4-91fa-3e6a06b73064?view_id=89e19615-c7b3-445c-9924-e9dd6b8ace75
 
 # +
 data_file_name = 'data/OGD_gest_kalwo_GEST_KALWOCHE_100.csv'
+covid_deaths_data_file_name = 'data/timeline-faelle-bundeslaender.csv'
 
 df = pd.read_csv(data_file_name, sep=';')  
+df_deaths = pd.read_csv(covid_deaths_data_file_name, sep=';')  
 # -
 
 df
+
+df_deaths
 
 # ## Pandas Profiling
 #
 
 profile = ProfileReport(df, title="Pandas Profiling Report")
-
+profile2 = ProfileReport(df_deaths, title="Pandas Profiling Report")
 
 # +
-# profile
+# profile2
 # -
 
 # ## Data Cleaning
@@ -68,42 +79,119 @@ df.groupby('date').agg('sum')
 
 grpd_date = df.groupby('date').agg('sum') 
 grpd_date = grpd_date.rename(columns={'counts':'nr_deaths'}) 
-grpd_date
+
+
+# +
+# grpd_date['date'] = grpd_date.index
+# grpd_date
+# -
+
+
+
+# ### Clean 2nd dataset
+
+temp = df_deaths.copy(deep=True)
+
+df_deaths = temp.copy(deep=True)
+
+df_deaths = df_deaths[df_deaths.Name == 'Österreich']
+
+df_deaths
+
+df_deaths = df_deaths.rename(columns={'Datum':'formatted_date', 'Todesfaelle':'deaths'})
+
+
+df_deaths = df_deaths[['formatted_date', 'deaths']]
+df_deaths
+
+# +
+df_deaths['formatted_date'] = [d.split("T")[0] for d in df_deaths['formatted_date']]
+
+df_deaths['date'] = pd.to_datetime(df_deaths['formatted_date'])
+
+# df_deaths['formatted_date'] = pd.to_datetime(df_deaths['formatted_date'])
+# df_deaths['formatted_date'] = df_deaths['formatted_date'].dt.tz_localize('CET', utc=True)
+ 
+    
+# df_deaths['date'] =  df_deaths['formatted_date'].dt.strftime('%Y-%m-%d')
+# -
+
+df_deaths
+
+grpd_date_df_deaths = df_deaths.groupby('date').agg('sum') 
+
+grpd_date_df_deaths['deaths_per_day'] = grpd_date_df_deaths.diff()
+
+grpd_date_df_deaths
+
+fig = px.line(
+    x=grpd_date_df_deaths.index,
+    y=grpd_date_df_deaths.deaths_per_day, 
+    title='Deaths per year'
+)
+fig.show()
+
+# +
+# grpd_date_df_deaths['date'] = grpd_date_df_deaths.index
+# grpd_date_df_deaths
+# -
+
+# ### Merge datasets
+
+total_df = pd.merge(grpd_date, grpd_date_df_deaths, how='left', on='date')
+total_df
+
+# +
+total_df = total_df.rename(
+    columns={'deaths_per_day':'covid_deaths'})
+
+total_df = total_df[['nr_deaths', 'covid_deaths']]
+# -
+
+total_df
 
 # ### Remove outliers
 
-grpd_date.describe()
+total_df.describe()
 
 # +
-upper_limit = grpd_date['nr_deaths'].quantile(0.99999)
-lower_limit = grpd_date['nr_deaths'].quantile(0.00001)
+upper_limit = total_df['nr_deaths'].quantile(0.99999)
+lower_limit = total_df['nr_deaths'].quantile(0.00001)
 
-new_df = grpd_date[(
-    grpd_date['nr_deaths'] <= upper_limit) & (
-    grpd_date['nr_deaths'] >= lower_limit)]
+new_df = total_df[(
+    total_df['nr_deaths'] <= upper_limit) & (
+    total_df['nr_deaths'] >= lower_limit)]
 # -
 
 new_df
 
-grpd_date = new_df
+final_df = new_df
 
 # ## Data visualization
 #
 
+# +
 fig = px.line(
-    x=grpd_date.index,
-    y=grpd_date.nr_deaths, 
+    x=final_df.index,
+    y=final_df.nr_deaths, 
     title='Deaths per year'
 )
+
+fig.add_traces(
+    go.Scatter(
+        x=final_df.index, y=final_df.covid_deaths, 
+        name='Covid deaths'))
+
 fig.show()
+# -
 
 # ### Simple regression
 
 # +
 
 fig = px.scatter(
-    x=grpd_date.index,
-    y=grpd_date.nr_deaths, 
+    x=final_df.index,
+    y=final_df.nr_deaths, 
     trendline="ols",
     trendline_color_override="red",
     opacity=.5,
@@ -119,8 +207,8 @@ fig.show()
 # +
 
 fig = px.scatter(
-    x=grpd_date.index,
-    y=grpd_date.nr_deaths, 
+    x=final_df.index,
+    y=final_df.nr_deaths, 
     trendline="lowess", #ols
     trendline_color_override="red",
     trendline_options=dict(frac=0.1),
@@ -138,10 +226,10 @@ fig.show()
 from sklearn.linear_model import LinearRegression
 
 
-x=grpd_date.index.values
+x=final_df.index.values
 
 
-y=grpd_date.nr_deaths.values
+y=final_df.nr_deaths.values
 x = np.arange(0, len(y))
 
 # x = grpd_date.conv_date.values
@@ -333,7 +421,7 @@ frames=[
     )
     for k in range(0, len(grpd_date))]
 
-layout = go.Layout(width=700,
+layout = go.Layout(width=1000,
                    height=600,
                    showlegend=False,
                    hovermode='x unified',
