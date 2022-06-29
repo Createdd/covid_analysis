@@ -260,7 +260,7 @@ layout = go.Layout(width=1000,
 # layout.update(xaxis =dict(range=['2020-03-16', '2020-06-13'], autorange=False),
 #               yaxis =dict(range=[0, 35000], autorange=False));
 fig = go.Figure(data=[trace1, trace2], frames=frames, layout=layout)
-# a
+
 fig.show()
 # -
 
@@ -407,17 +407,19 @@ slope at point: {slope_at_point}''')
 
 # -
 
-def slope_line(fig, ind, x, y):
+def slope_line(fig, ind, x, y, verbose=False):
     """Plot a line from slope and intercept"""
     
-    print((x[0] - x[ind]))
+    
     ylow = (x[0] - x[ind]) * slope_at_point[ind] + y[ind]
     yhigh = (x[-1] - x[ind]) * slope_at_point[ind] + y[ind]
     
     x_vals = [x[0], x[-1]]
     y_vals = [ylow, yhigh]
 
-    print(x[ind], x_vals, y_vals, y[ind],slope_at_point[ind])
+    if verbose:
+        print((x[0] - x[ind]))
+        print(x[ind], x_vals, y_vals, y[ind],slope_at_point[ind])
     
     fig.add_trace(
             go.Scatter(
@@ -427,7 +429,8 @@ def slope_line(fig, ind, x, y):
                 line = dict(color='orange', width=2, dash='dash'),
             )
         )
-
+    
+    return x_vals, y_vals
 
 len(final_df.index)
 
@@ -620,10 +623,144 @@ fig.update_layout(
 )
     
 fig.show()
+
+# +
+traces = []
+animation_dicts = dict()
+
+
+traces.append(
+            go.Scatter(
+                x=np.arange(0, len(y)),
+                y=only_covid.covid_deaths, 
+                mode='lines',
+                opacity=.5,
+                line=dict(width=1.5)))
+
+traces.append(
+            go.Scatter(
+                x=np.arange(0, len(y)),
+                y=only_covid.covid_deaths, 
+                mode='markers+lines',
+                opacity=.5,
+                line=dict(width=1.5)))
+
+
+
+for pt in np.arange(0, len(y)):#[31, 60]:
+    x_vals, y_vals = slope_line(
+        fig, 
+        x= np.arange(0, len(y)),
+        y = y_value_at_point, 
+        ind = pt)
+    
+    animation_dicts[pt]= [x_vals, y_vals]
+    
+#     traces.append(
+#             go.Scatter(
+#                 x=x_vals,
+#                 y=y_vals, 
+#                 mode='lines',
+#                 opacity=.4,
+#                 line=dict(width=1.5)))
+    
+#     fig.add_annotation(
+#         x=pt, 
+#         y=y_value_at_point[pt],
+#         text=f'''Slope: {slope_at_point[pt]:.2f}\t {only_covid.index.strftime('%Y-%m-%d')[pt]}''',
+#         showarrow=True,
+#         arrowhead=1)
+    
+    
+frame_data = []   
+for k in range(0, len(final_df)):
+        
+#     frame_data.append(
+#         dict(data=
+        
+#             [dict(
+#                 type = 'scatter',
+#                 x=np.arange(0, len(y))[:k],
+#                 y=only_covid.covid_deaths[:k]
+#                 )]
+#             )
+#     )
+    
+    if k in animation_dicts.keys():
+        frame_data.append(
+            dict(data=
+                [dict(
+                    type = 'scatter',
+                    x=animation_dicts[k][0],
+                    y=animation_dicts[k][1],
+                    mode='lines',
+                    line={'dash': 'dash', 'color': 'green'}
+                )]
+            )
+        )
+    
+    
+
+all_frames = frame_data
+
+
+
+frames=all_frames
+    
+    
+    
+#     dict(
+#         data=[
+#             dict(
+#                 type = 'scatter',
+#                 x=np.arange(0, len(y))[:k],
+#                 y=only_covid.covid_deaths[:k]
+#             ),
+#             dict(
+#                 type = 'scatter',
+#                 x=animation_dicts[k][0],
+#                 y=animation_dicts[k][1]
+#             ),
+#         ]
+#     )
+    
+#     for k in range(0, len(final_df))
+
+
+layout = go.Layout(
+#     width=1000,
+#     height=600,
+                   showlegend=False,
+                   hovermode='x unified',
+                   updatemenus=[
+                        dict(
+                            type='buttons', 
+                            showactive=True,
+                            y=1.05,
+                            x=1.15,
+                            xanchor='right',
+                            yanchor='top',
+                            pad=dict(t=0, r=10),
+                            buttons=[dict(label='Build line',
+                            method='animate',
+                            args=[None, 
+                                  dict(frame=dict(duration=100, 
+                                                  redraw=False),
+                                                  transition=dict(duration=0),
+                                                  fromcurrent=True,
+                                                  mode='immediate')
+                                 ]
+                            )]
+                        )
+                    ]              
+                  )
+
+fig = go.Figure(
+    data=traces,
+    frames=frames,
+    layout=layout)
+
+fig.show()
 # -
-
-
-
-
 
 
