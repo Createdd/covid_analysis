@@ -624,7 +624,7 @@ fig.update_layout(
     
 fig.show()
 
-# +
+# + code_folding=[]
 traces = []
 animation_dicts = dict()
 
@@ -672,7 +672,9 @@ for pt in np.arange(0, len(y)):#[31, 60]:
 #         arrowhead=1)
     
     
-frame_data = []   
+frame_data = [] 
+slider_steps = []
+
 for k in range(0, len(final_df)):
         
 #     frame_data.append(
@@ -685,6 +687,8 @@ for k in range(0, len(final_df)):
 #                 )]
 #             )
 #     )
+
+
     
     if k in animation_dicts.keys():
         frame_data.append(
@@ -698,6 +702,17 @@ for k in range(0, len(final_df)):
                 )]
             )
         )
+        
+        slider_steps.append( 
+            {"args": [
+                [k],
+                {"frame": {"duration": 300, "redraw": False},
+                 "mode": "immediate",
+                 "transition": {"duration": 300}}
+                ],
+            "label": k,
+            "method": "animate"}
+       )
     
     
 
@@ -726,34 +741,73 @@ frames=all_frames
     
 #     for k in range(0, len(final_df))
 
+sliders_dict = {
+    "active": 0,
+    "yanchor": "top",
+    "xanchor": "left",
+    "currentvalue": {
+        "font": {"size": 20},
+        "prefix": "Year:",
+        "visible": True,
+        "xanchor": "right"
+    },
+    "transition": {"duration": 100, "easing": "cubic-in-out"},
+#     "pad": {"b": 10, "t": 50},
+#     "len": 0.9,
+#     "x": 0.1,
+#     "y": 0,
+    "steps": slider_steps
+}
+
 
 layout = go.Layout(
 #     width=1000,
 #     height=600,
-                   showlegend=False,
-                   hovermode='x unified',
+        xaxis={"range": [0, len(y)], "title": "weeks"},
+                    sliders=[sliders_dict],
+#                    showlegend=False,
+                   hovermode='closest',#'x unified',
                    updatemenus=[
                         dict(
                             type='buttons', 
-                            showactive=True,
-                            y=1.05,
-                            x=1.15,
-                            xanchor='right',
-                            yanchor='top',
-                            pad=dict(t=0, r=10),
-                            buttons=[dict(label='Build line',
-                            method='animate',
-                            args=[None, 
-                                  dict(frame=dict(duration=100, 
-                                                  redraw=False),
-                                                  transition=dict(duration=0),
-                                                  fromcurrent=True,
-                                                  mode='immediate')
-                                 ]
-                            )]
+#                             showactive=True,
+#                             y=1.05,
+#                             x=1.15,
+#                             xanchor='right',
+#                             yanchor='top',
+#                             pad=dict(t=0, r=10),
+                            buttons=[
+                                dict(
+                                        label='Build line',
+                                    method='animate',
+                                    args=[None, 
+                                      dict(frame=dict(duration=100, 
+                                                      redraw=False),
+                                                      transition=dict(duration=0),
+                                                      fromcurrent=True,
+                                                      mode='immediate')
+                                 ]),
+                                {
+                                    "args": [[None], {"frame": {"duration": 0, "redraw": False},
+                                                      "mode": "immediate",
+                                                      "transition": {"duration": 0}}],
+                                    "label": "Pause",
+                                    "method": "animate"
+                                }
+                            ],
+                            
+                            direction="left",
+                            pad= {"r": 10, "t": 87},
+                            showactive= False,
+                            x=0.1,
+                            xanchor= "right",
+                            y= 0,
+                            yanchor= "top"
                         )
                     ]              
                   )
+
+
 
 fig = go.Figure(
     data=traces,
