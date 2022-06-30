@@ -12,11 +12,6 @@
 #     name: conda-env-streamlit_apps-py
 # ---
 
-# Show fully interactive charts version: 
-#
-# https://nbviewer.org/github/Createdd/covid_analysis/blob/main/covid_analysis_charts.ipynb 
-#
-#
 # # Analysing Austrias deaths and their Covid-19 correlation
 #
 #
@@ -59,7 +54,7 @@ from sklearn.preprocessing import PolynomialFeatures
 import plotly.io as pio
 
 # for rendering plot static
-pio.renderers.default = "svg"
+# pio.renderers.default = "svg"
 # -
 
 # ## Load data
@@ -302,7 +297,7 @@ layout = go.Layout(width=1000,
 #               yaxis =dict(range=[0, 35000], autorange=False));
 fig = go.Figure(data=[trace1, trace2], frames=frames, layout=layout)
 
-fig.show()
+# fig.show()
 # -
 
 # ### Simple regression
