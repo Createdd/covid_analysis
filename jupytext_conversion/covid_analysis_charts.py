@@ -12,21 +12,48 @@
 #     name: conda-env-streamlit_apps-py
 # ---
 
+# # Analysing Austrias deaths and their Covid-19 correlation
+#
+# The data is used from **data.gv.at** which is Austrias official open data source. 
+#
+# More about it [here](https://www.data.gv.at/infos/zielsetzung-data-gv-at/)
+#
+# ## Datasets
+#
+# The used datasets are from:
+#
+# - general deaths: https://www.data.gv.at/katalog/dataset/stat_gestorbene-in-osterreich-ohne-auslandssterbefalle-ab-2000-nach-kalenderwoche/resource/b0c11b84-69d4-4d3a-9617-5307cc4edb73
+#
+# - covid deaths: https://www.data.gv.at/katalog/dataset/covid-19-zeitverlauf-der-gemeldeten-covid-19-zahlen-der-bundeslander-morgenmeldung/resource/24f56d99-e5cc-42e4-91fa-3e6a06b73064?view_id=89e19615-c7b3-445c-9924-e9dd6b8ace75
+#
+# ## Goal of the analysis
+#
+# This project has multiple goals.
+#
+# - Work with Austriaas open source data and see its ease of use
+# - Plot interactively the development of deaths and covid deaths over time
+# - Fit a (polynomial) regression through the data and calculate the slopes and given points to see the change of deaths rates
+#
+# # Analysis
+
 # +
+import datetime
 import numpy as np
 import pandas as pd
 
 from pandas_profiling import ProfileReport
+
 import plotly.express as px
 import plotly.graph_objects as go
+
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
 
 # -
 
 # ## Load data
 #
-# general deaths: https://www.data.gv.at/katalog/dataset/stat_gestorbene-in-osterreich-ohne-auslandssterbefalle-ab-2000-nach-kalenderwoche/resource/b0c11b84-69d4-4d3a-9617-5307cc4edb73
 #
-# covid deaths: https://www.data.gv.at/katalog/dataset/covid-19-zeitverlauf-der-gemeldeten-covid-19-zahlen-der-bundeslander-morgenmeldung/resource/24f56d99-e5cc-42e4-91fa-3e6a06b73064?view_id=89e19615-c7b3-445c-9924-e9dd6b8ace75
 
 # +
 data_file_name = 'data/OGD_gest_kalwo_GEST_KALWOCHE_100.csv'
@@ -43,8 +70,9 @@ df_deaths
 # ## Pandas Profiling
 #
 
-profile = ProfileReport(df, title="Pandas Profiling Report")
-profile2 = ProfileReport(df_deaths, title="Pandas Profiling Report")
+# +
+# profile = ProfileReport(df, title="Pandas Profiling Report")
+# profile2 = ProfileReport(df_deaths, title="Pandas Profiling Report")
 
 # +
 # profile2
@@ -65,11 +93,12 @@ df['date'] = pd.to_datetime(df['formatted_date'], format='%Y%W%w')
 
 # df['datetime'] = pd.to_datetime(df.year.astype(str) + '-' + 
 #                                 df.cal_week.astype(str) + '-1' , format="%Y-%W-%w").dt.strftime('%Y-%W')
-# -
 
-import datetime
+# +
+
 df['conv_date']= df.date.map(datetime.datetime.toordinal)
 
+# -
 
 df
 
@@ -85,8 +114,6 @@ grpd_date = grpd_date.rename(columns={'counts':'nr_deaths'})
 # grpd_date['date'] = grpd_date.index
 # grpd_date
 # -
-
-
 
 # ### Clean 2nd dataset
 
@@ -171,7 +198,10 @@ final_df = new_df
 only_covid = final_df[final_df.covid_deaths.notna()]
 only_covid.shape
 
-final_df = only_covid
+# +
+# only if we want to limit all deaths to covid time period
+# final_df = only_covid
+# -
 
 # ## Data visualization - All deaths
 #
@@ -280,50 +310,27 @@ fig = px.scatter(
 )
 fig.show()
 
+results = px.get_trendline_results(fig)
+results = results.iloc[0]["px_fit_results"].summary()
+print(results)
 # regression params not available for lowess
 # -
 
-# ### Polynomial Regression
+# #### Sklearn Implementation
 
 # +
-
-fig = px.scatter(
-    x=final_df.index,
-    y=final_df.nr_deaths, 
-    trendline="lowess", #ols
-    trendline_color_override="red",
-    trendline_options=dict(frac=0.1),
-    opacity=.5,
-    title='Deaths per year'
-)
-fig.show()
-
-# regression params not available for lowess
-# -
-
-# ### Sklearn Implementation
-
-# +
-from sklearn.linear_model import LinearRegression
-
-
 x=final_df.index.values
-
 
 y=final_df.nr_deaths.values
 x = np.arange(0, len(y))
-
-# x = final_df.conv_date.values
 x = x.reshape(-1, 1)
+
 model = LinearRegression()
 model.fit(x, y)
 
 
 x_range_ordinal = np.linspace(x.min(), x.max(), len(y))
-
-
 y_range = model.predict(x_range_ordinal.reshape(-1, 1))
-
 
 len(x_range_ordinal), len(y_range)
 
@@ -340,18 +347,34 @@ fig = px.scatter(
 
 fig.add_traces(
     go.Scatter(
-        x=final_df.index, y=y_range, 
+        x=final_df.index, 
+        y=y_range, 
         name='Regression Fit'))
 
 
 fig.show()
 
+# -
+
+# ### Polynomial Regression
 
 # +
-from sklearn.preprocessing import PolynomialFeatures
 
+fig = px.scatter(
+    x=final_df.index,
+    y=final_df.nr_deaths, 
+    trendline="lowess", 
+    trendline_color_override="red",
+    trendline_options=dict(frac=0.1),
+    opacity=.5,
+    title='Deaths per year'
+)
+fig.show()
+
+# regression params not available for lowess
+
+# +
 poly_degree = 10
-
 
 y = final_df.nr_deaths.values
 
@@ -372,15 +395,15 @@ poly_reg_model.fit(poly_features, y)
 ###
 
 #-----
-fittedParameters = np.polyfit(np.arange(0, len(y)), y, poly_degree )
+fitted_params = np.polyfit(np.arange(0, len(y)), y, poly_degree )
 
-poly_new = np.poly1d(fittedParameters)
+polynomials = np.poly1d(fitted_params)
 
-deriv = np.polyder(poly_new)
+derivatives = np.polyder(polynomials)
 
-y_value_at_point = poly_new(x).flatten()
+y_value_at_point = polynomials(x).flatten()
 
-slope_at_point = np.polyval(deriv, np.arange(0, len(y)))
+slope_at_point = np.polyval(derivatives, np.arange(0, len(y)))
 #-----
 
 
@@ -396,9 +419,9 @@ y: {len(y), y},
 ''')
 
 print(f'''
-fittedparams: {fittedParameters, fittedParameters},
+fittedparams: {fitted_params, fitted_params},
 
-derivs: {deriv},
+derivs: {derivatives},
 
 y vals at point: {y_value_at_point, len(y_value_at_point)},
 
@@ -407,15 +430,17 @@ slope at point: {slope_at_point}''')
 
 # -
 
-def slope_line(fig, ind, x, y, verbose=False):
-    """Plot a line from slope and intercept"""
+# #### Calculate polynomial slope at certain point
+
+def draw_slope_line_at_point(fig, ind, x, y, slope_at_point, verbose=False):
+    """Plot a line from an index at a specific point for x values, y values and their slopes"""
     
     
-    ylow = (x[0] - x[ind]) * slope_at_point[ind] + y[ind]
-    yhigh = (x[-1] - x[ind]) * slope_at_point[ind] + y[ind]
+    y_low = (x[0] - x[ind]) * slope_at_point[ind] + y[ind]
+    y_high = (x[-1] - x[ind]) * slope_at_point[ind] + y[ind]
     
     x_vals = [x[0], x[-1]]
-    y_vals = [ylow, yhigh]
+    y_vals = [y_low, y_high]
 
     if verbose:
         print((x[0] - x[ind]))
@@ -432,18 +457,12 @@ def slope_line(fig, ind, x, y, verbose=False):
     
     return x_vals, y_vals
 
-len(final_df.index)
-
-len(final_df.nr_deaths.values)
-
-final_df.index.strftime('%Y-%m-%d')
-
 # + code_folding=[]
 fig = px.scatter(
     x=np.arange(0, len(y)),
     #x=final_df.index,
     y=final_df.nr_deaths, 
-    opacity=.5,
+    opacity=.3,
     title='Deaths per year'
 )
 
@@ -456,35 +475,23 @@ fig.add_traces(
         name='Polynomial regression Fit 2'))
 
 
-
-fig.update_xaxes(
+# Replace x axis ticks with dates instead numbers
+# fig.update_xaxes(
 #     rangeslider_visible=True,
 #     ticktext=final_df.index.strftime('%Y-%m-%d')[::10],
 #     tickvals=np.arange(0, len(y))[::10],
-#     dtick = 1000,
-#     tickformatstops = [
-#         dict(dtickrange=[None, 1000], value="%H:%M:%S.%L ms"),
-#         dict(dtickrange=[1000, 60000], value="%H:%M:%S s"),
-#         dict(dtickrange=[60000, 3600000], value="%H:%M m"),
-#         dict(dtickrange=[3600000, 86400000], value="%H:%M h"),
-#         dict(dtickrange=[86400000, 604800000], value="%e. %b d"),
-#         dict(dtickrange=[604800000, "M1"], value="%e. %b w"),
-#         dict(dtickrange=["M1", "M12"], value="%b '%y M"),
-#         dict(dtickrange=["M12", None], value="%Y Y")
-#     ]
     #tickformatstops not working with ticktextZ
-)
+# )
 
 
-
-
-# for pt in [1120]:
-for pt in [31]:
-    slope_line(
+for pt in [750 ,1080]:
+# for pt in [31]:
+    draw_slope_line_at_point(
         fig, 
         x= np.arange(0, len(y)),
         #x=final_df.index,
-        y = y_value_at_point, 
+        y = y_value_at_point,
+        slope_at_point=slope_at_point,
         ind = pt)
     
     fig.add_annotation(x=pt, y=y_value_at_point[pt],
@@ -501,7 +508,7 @@ fig.show()
 
 # -
 
-# ## Data visualization - Corona deaths
+# ## Visualization - Covid deaths
 
 fig = px.scatter(
     x=only_covid.index,
@@ -536,7 +543,6 @@ poly_degree = 10
 
 
 y = only_covid.covid_deaths.values
-
 x = np.arange(0, len(y))
 x = x.reshape(-1, 1)
 
@@ -547,22 +553,16 @@ poly_reg_model = LinearRegression()
 poly_reg_model.fit(poly_features, y)
 
 
-# y_range_poly = poly_reg_model.predict(
-#     poly_pred_x)
-# print(poly_reg_model.intercept_)
-# print(poly_reg_model.coef_)
-###
-
 #-----
-fittedParameters = np.polyfit(np.arange(0, len(y)), y, poly_degree )
+fitted_params = np.polyfit(np.arange(0, len(y)), y, poly_degree )
 
-poly_new = np.poly1d(fittedParameters)
+polynomials = np.poly1d(fitted_params)
 
-deriv = np.polyder(poly_new)
+derivatives = np.polyder(polynomials)
 
-y_value_at_point = poly_new(x).flatten()
+y_value_at_point = polynomials(x).flatten()
 
-slope_at_point = np.polyval(deriv, np.arange(0, len(y)))
+slope_at_point = np.polyval(derivatives, np.arange(0, len(y)))
 #-----
 
 
@@ -572,15 +572,15 @@ slope_at_point = np.polyval(deriv, np.arange(0, len(y)))
 # poly_pred_x = poly.fit_transform(x_range_ordinal_poly.reshape(-1, 1))
 
 
-print(f'''
-x: {len(x), x},
-y: {len(y), y},
-''')
+# print(f'''
+# x: {len(x), x},
+# y: {len(y), y},
+# ''')
 
 print(f'''
-fittedparams: {fittedParameters, fittedParameters},
+fittedparams: {fitted_params, fitted_params},
 
-derivs: {deriv},
+derivs: {derivatives},
 
 y vals at point: {y_value_at_point, len(y_value_at_point)},
 
@@ -603,11 +603,12 @@ fig.add_traces(
         name='Polynomial regression Fit 2'))
 
 for pt in [31]:
-    slope_line(
+    draw_slope_line_at_point(
         fig, 
         x= np.arange(0, len(y)),
         #x=final_df.index,
-        y = y_value_at_point, 
+        y = y_value_at_point,
+        slope_at_point=slope_at_point,
         ind = pt)
     
     fig.add_annotation(
@@ -623,6 +624,9 @@ fig.update_layout(
 )
     
 fig.show()
+# -
+
+# ### Interactive tangent visualization
 
 # + code_folding=[]
 traces = []
@@ -633,25 +637,52 @@ traces.append(
             go.Scatter(
                 x=np.arange(0, len(y)),
                 y=only_covid.covid_deaths, 
+                name='Covid deaths',
                 mode='lines',
                 opacity=.5,
-                line=dict(width=1.5)))
+                line=dict(width=1.5)
+            
+            ))
+
+# traces.append(
+#             go.Scatter(
+#                 x=np.arange(0, len(y)),
+#                 y=only_covid.covid_deaths, 
+#                 mode='lines',
+#                 opacity=.5,
+#                 line={'shape': 'spline', 'smoothing': 1.3}
+#             ))
 
 traces.append(
             go.Scatter(
                 x=np.arange(0, len(y)),
-                y=only_covid.covid_deaths, 
-                mode='markers+lines',
+                y=only_covid.covid_deaths,
+                name='Covid deaths',
+                mode='markers',
                 opacity=.5,
-                line=dict(width=1.5)))
+                line=dict(width=1)
+            
+            ))
+
+traces.append(
+    go.Scatter(
+        x=np.arange(0, len(y)),
+        #x=final_df.index.strftime('%Y-%m-%d').to_list(),
+        y=y_value_at_point, 
+        name='Polynomial regression Fit',
+                    mode='lines',
+                opacity=.5,
+                line=dict(width=1.5)
+    ))
 
 
 
 for pt in np.arange(0, len(y)):#[31, 60]:
-    x_vals, y_vals = slope_line(
+    x_vals, y_vals = draw_slope_line_at_point(
         fig, 
         x= np.arange(0, len(y)),
         y = y_value_at_point, 
+        slope_at_point=slope_at_point,
         ind = pt)
     
     animation_dicts[pt]= [x_vals, y_vals]
@@ -689,7 +720,7 @@ for k in range(0, len(final_df)):
 #     )
 
 
-    
+    # add slope lines
     if k in animation_dicts.keys():
         frame_data.append(
             dict(data=
@@ -705,7 +736,7 @@ for k in range(0, len(final_df)):
         
         slider_steps.append( 
             {"args": [
-                [k],
+                frame_data[k],
                 {"frame": {"duration": 300, "redraw": False},
                  "mode": "immediate",
                  "transition": {"duration": 300}}
@@ -747,41 +778,33 @@ sliders_dict = {
     "xanchor": "left",
     "currentvalue": {
         "font": {"size": 20},
-        "prefix": "Year:",
+        "prefix": "Week:",
         "visible": True,
         "xanchor": "right"
     },
-    "transition": {"duration": 100, "easing": "cubic-in-out"},
-#     "pad": {"b": 10, "t": 50},
-#     "len": 0.9,
-#     "x": 0.1,
-#     "y": 0,
+    "transition": {"duration": 300, "easing": "cubic-in-out"},
+    "pad": {"b": 10, "t": 50},
+    "len": 0.9,
+    "x": 0.1,
+    "y": 0,
     "steps": slider_steps
 }
 
 
 layout = go.Layout(
-#     width=1000,
-#     height=600,
         xaxis={"range": [0, len(y)], "title": "weeks"},
                     sliders=[sliders_dict],
 #                    showlegend=False,
-                   hovermode='closest',#'x unified',
+                   hovermode='x unified',
                    updatemenus=[
                         dict(
                             type='buttons', 
-#                             showactive=True,
-#                             y=1.05,
-#                             x=1.15,
-#                             xanchor='right',
-#                             yanchor='top',
-#                             pad=dict(t=0, r=10),
                             buttons=[
                                 dict(
-                                        label='Build line',
+                                        label='Show tangents',
                                     method='animate',
                                     args=[None, 
-                                      dict(frame=dict(duration=100, 
+                                      dict(frame=dict(duration=200, 
                                                       redraw=False),
                                                       transition=dict(duration=0),
                                                       fromcurrent=True,
@@ -816,5 +839,17 @@ fig = go.Figure(
 
 fig.show()
 # -
+
+# # Conclusion
+#
+#
+# A proper interpretation would need a lot more research. As stated above this notebook as also technical implementational goals instead of merely analysing the deaths of people in Austria. 
+#
+# I, as an average educated person in this matter witness that
+# - the dataset needs preparation to be used efficiently for analysis
+# - analysis of the death rates alone is not sufficient to tell about a strong increase of deaths because of corona 
+# - ( see a more detailed analysis here: https://www.data.gv.at/anwendungen/wiener-mortalitaetsmonitoring/ )
+# - looking at the death rates alone it becomes clear that covid might very well contribute to the fact that there is an increase in deaths in the last 2 years
+#
 
 
