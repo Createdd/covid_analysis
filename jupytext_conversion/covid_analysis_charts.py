@@ -55,10 +55,12 @@ import plotly.graph_objects as go
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 
-# -
-
+# +
 import plotly.io as pio
-# pio.renderers.default = "svg"
+
+# for rendering plot static
+pio.renderers.default = "svg"
+# -
 
 # ## Load data
 #
@@ -849,9 +851,7 @@ fig = go.Figure(
 fig.show()
 
 # +
-
-
-pio.write_html(fig, file='figure.html', auto_open=True)
+# pio.write_html(fig, file='figure.html', auto_open=True)
 # -
 
 # # Conclusion
