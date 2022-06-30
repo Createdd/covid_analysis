@@ -209,6 +209,8 @@ only_covid.shape
 # final_df = only_covid
 # -
 
+final_df.to_excel("data/cleaned_data.xlsx")
+
 # ## Data visualization - All deaths
 #
 
