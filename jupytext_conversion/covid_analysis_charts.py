@@ -511,7 +511,7 @@ fig.update_layout(
 )
     
 fig.show()
-
+pio.write_html(fig, file='all_deaths_with specific_slopes.html', auto_open=False)
 # -
 
 # ## Visualization - Covid deaths
@@ -692,7 +692,8 @@ for pt in np.arange(0, len(y)):#[31, 60]:
         ind = pt)
     
     animation_dicts[pt]= [x_vals, y_vals]
-    
+
+# plotting tangent lines without animation
 #     traces.append(
 #             go.Scatter(
 #                 x=x_vals,
@@ -713,7 +714,8 @@ frame_data = []
 slider_steps = []
 
 for k in range(0, len(final_df)):
-        
+
+# plotting the scatterplot as well in frames
 #     frame_data.append(
 #         dict(data=
         
@@ -743,52 +745,32 @@ for k in range(0, len(final_df)):
         slider_steps.append( 
             {"args": [
                 frame_data[k],
-                {"frame": {"duration": 300, "redraw": False},
+                {"frame": {"duration": 200, "redraw": False},
                  "mode": "immediate",
-                 "transition": {"duration": 300}}
+                 "transition": {"duration": 200}}
                 ],
-            "label": k,
-            "method": "animate"}
+            "label": only_covid.index.strftime('%Y-%m-%d')[k],
+            "method": "animate"
+            }
        )
     
     
 
 all_frames = frame_data
-
-
-
 frames=all_frames
-    
-    
-    
-#     dict(
-#         data=[
-#             dict(
-#                 type = 'scatter',
-#                 x=np.arange(0, len(y))[:k],
-#                 y=only_covid.covid_deaths[:k]
-#             ),
-#             dict(
-#                 type = 'scatter',
-#                 x=animation_dicts[k][0],
-#                 y=animation_dicts[k][1]
-#             ),
-#         ]
-#     )
-    
-#     for k in range(0, len(final_df))
 
 sliders_dict = {
-    "active": 0,
+    "active": 1,
     "yanchor": "top",
     "xanchor": "left",
+    
     "currentvalue": {
         "font": {"size": 20},
-        "prefix": "Week:",
+        "prefix": "Date:",
         "visible": True,
         "xanchor": "right"
     },
-    "transition": {"duration": 300, "easing": "cubic-in-out"},
+    "transition": {"duration": 200, "easing": "cubic-in-out"},
     "pad": {"b": 10, "t": 50},
     "len": 0.9,
     "x": 0.1,
@@ -801,13 +783,13 @@ layout = go.Layout(
         xaxis={"range": [0, len(y)], "title": "weeks"},
                     sliders=[sliders_dict],
 #                    showlegend=False,
-                   hovermode='x unified',
+#                    hovermode='x unified',
                    updatemenus=[
                         dict(
                             type='buttons', 
                             buttons=[
                                 dict(
-                                        label='Show tangents',
+                                    label='Show tangents',
                                     method='animate',
                                     args=[None, 
                                       dict(frame=dict(duration=200, 
@@ -817,9 +799,9 @@ layout = go.Layout(
                                                       mode='immediate')
                                  ]),
                                 {
-                                    "args": [[None], {"frame": {"duration": 0, "redraw": False},
+                                    "args": [[None], {"frame": {"duration": 200, "redraw": False},
                                                       "mode": "immediate",
-                                                      "transition": {"duration": 0}}],
+                                                      "transition": {"duration": 200}}],
                                     "label": "Pause",
                                     "method": "animate"
                                 }
@@ -840,14 +822,14 @@ layout = go.Layout(
 
 fig = go.Figure(
     data=traces,
-    frames=frames,
-    layout=layout)
+
+    layout=layout,
+    frames=frames)
 
 fig.show()
-
-# +
-# pio.write_html(fig, file='figure.html', auto_open=True)
 # -
+
+pio.write_html(fig, file='covid_deaths_with tangents.html', auto_open=False)
 
 # # Conclusion
 #
