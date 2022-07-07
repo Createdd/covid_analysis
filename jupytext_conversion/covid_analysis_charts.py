@@ -830,6 +830,9 @@ fig = go.Figure(
     frames=frames)
 
 fig.show()
+# -
+
+only_covid
 
 # +
 # pio.write_html(fig, file='covid_deaths_with tangents.html', auto_open=False)
