@@ -11,7 +11,8 @@ from sklearn.preprocessing import PolynomialFeatures
 final_df = pd.read_excel('data/cleaned_data.xlsx', index_col=0)
 only_covid = final_df[final_df.covid_deaths.notna()]
 
-print('dataaaaaaa', only_covid.head())
+
+
 
 
 # fig = px.line(
@@ -94,14 +95,14 @@ slope_at_point = np.polyval(derivatives, np.arange(0, len(y)))
 # y: {len(y), y},
 # ''')
 
-print(f'''
-fittedparams: {fitted_params, fitted_params},
+# print(f'''
+# fittedparams: {fitted_params, fitted_params},
 
-derivs: {derivatives},
+# derivs: {derivatives},
 
-y vals at point: {y_value_at_point, len(y_value_at_point)},
+# y vals at point: {y_value_at_point, len(y_value_at_point)},
 
-slope at point: {slope_at_point}''')
+# slope at point: {slope_at_point}''')
 
 # ---
 
@@ -208,7 +209,6 @@ for k in range(0, len(final_df)):
 #     )
 
 
-    print('-----------', only_covid.index)
     # add slope lines
     if k in animation_dicts.keys():
         frame_data.append(
@@ -307,6 +307,13 @@ fig = go.Figure(
     layout=layout,
     frames=frames)
 
-fig.show()
+# fig.show()
+
+
+sidebar = st.sidebar
+show_data = sidebar.checkbox("Show Data")
+
+if show_data:
+    st.dataframe(only_covid)
 
 st.plotly_chart(fig)
