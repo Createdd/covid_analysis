@@ -207,9 +207,10 @@ only_covid.shape
 # +
 # only if we want to limit all deaths to covid time period
 # final_df = only_covid
-# -
 
-final_df.to_excel("data/cleaned_data.xlsx")
+# +
+# final_df.to_excel("data/cleaned_data.xlsx")
+# -
 
 # ## Data visualization - All deaths
 #
@@ -513,7 +514,7 @@ fig.update_layout(
 )
     
 fig.show()
-pio.write_html(fig, file='all_deaths_with specific_slopes.html', auto_open=False)
+# pio.write_html(fig, file='all_deaths_with specific_slopes.html', auto_open=False)
 # -
 
 # ## Visualization - Covid deaths
@@ -829,9 +830,10 @@ fig = go.Figure(
     frames=frames)
 
 fig.show()
-# -
 
-pio.write_html(fig, file='covid_deaths_with tangents.html', auto_open=False)
+# +
+# pio.write_html(fig, file='covid_deaths_with tangents.html', auto_open=False)
+# -
 
 # # Conclusion
 #
