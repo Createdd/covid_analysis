@@ -69,5 +69,5 @@ This will open a server, demonstrating
 
 ![](https://media.giphy.com/media/AmHDlRuNlQ7oHoAcib/giphy.gif)
 
-Furhter ideas to add for the streamlit app, [here](https://dataqoil.com/2022/02/20/creating-awesome-data-dashboard-with-plotly-in-streamlit/
+Further ideas to add for the streamlit app, [here](https://dataqoil.com/2022/02/20/creating-awesome-data-dashboard-with-plotly-in-streamlit/
 )
