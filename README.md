@@ -1,12 +1,10 @@
 # Analysing Austrias deaths and their Covid-19 correlation
 
 The data is used from **data.gv.at** which is Austrias official open data source. 
-
-More about it [here](https://www.data.gv.at/infos/zielsetzung-data-gv-at/)
+More about it [here](https://www.data.gv.at/infos/zielsetzung-data-gv-at/).
 
 
 Central Notebook is [covid_analysis_charts.ipynb](covid_analysis_charts.ipynb)
-
 
 --- 
 
@@ -25,11 +23,11 @@ covid deaths: https://www.data.gv.at/katalog/dataset/covid-19-zeitverlauf-der-ge
 ## Goal of the analysis
 This project has multiple goals.
 
-Work with Austrias open source data and see its ease of use
+Work with Austria's open source data and see its ease of use
 Plot interactively the development of deaths and covid deaths over time
-Fit a (polynomial) regression through the data and calculate the slopes and given points to see the change of deaths rates
+Fit a (polynomial) regression through the data and calculate the slopes and given points to see the change of deaths rates.
 
-
+![img.png](img.png)
 
 ## Analysis of covid deaths
 
