@@ -1,18 +1,20 @@
 # Analysing Austrias deaths and their Covid-19 correlation
 
-The data is used from **data.gv.at** which is Austrias official open data source. 
+The data is used from **data.gv.at** which is Austrias official open data source.
 More about it [here](https://www.data.gv.at/infos/zielsetzung-data-gv-at/).
 
 
 Central Notebook is [covid_analysis_charts.ipynb](covid_analysis_charts.ipynb)
 
---- 
+---
 
-# Published notebook on 
+# Published notebook on
 
-https://createdd.github.io/covid_analysis/covid_analysis_charts.html 
+https://createdd.github.io/covid_analysis/covid_analysis_charts.html
 
---- 
+---
+
+
 ## Datasets
 The used datasets are from:
 
@@ -63,9 +65,15 @@ See [here](https://www.python-engineer.com/posts/setup-jupyter-notebook-in-conda
 ipython kernel install --user --name=<any_name_for_kernel>
 ```
 
-This will open a server, demonstrating 
+This will open a server, demonstrating
 
 ![](https://media.giphy.com/media/AmHDlRuNlQ7oHoAcib/giphy.gif)
 
 Further ideas to add for the streamlit app, [here](https://dataqoil.com/2022/02/20/creating-awesome-data-dashboard-with-plotly-in-streamlit/
 )
+
+## Addtional
+
+Medium Article: https://towardsdatascience.com/check-data-claims-yourself-with-python-an-example-8b8a92c0ae56
+Explanation video: https://www.youtube.com/watch?v=fjJxxN2PtYk
+Timelapse video: https://www.youtube.com/watch?v=bZrwzROVczM
